@@ -1,1 +1,1 @@
-web: gunicorn app:app
+web: python fix_treys.py && gunicorn app:app
