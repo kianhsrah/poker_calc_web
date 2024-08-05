@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Poker Probability Calculator</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}" type="image/x-icon">
+</head>
+<body>
+    <div class="container">
+        <h1>Poker Probability Calculator</h1>
+        <form id="poker-form">
+            <label for="hand">Enter your hand (e.g., As Kh):</label>
+            <input type="text" id="hand" name="hand" required>
+            <label for="board">Enter the board cards (e.g., 2h 3d 5s):</label>
+            <input type="text" id="board" name="board">
+            <label for="num_players">Number of players:</label>
+            <input type="number" id="num_players" name="num_players" required>
+            <button type="submit">Calculate</button>
+        </form>
+        <div id="results-container">
+            <div class="probabilities">
+                <h3>User Probabilities</h3>
+                <div id="user-probabilities"></div>
+            </div>
+            <div id="center-results">
+                <h2>Results</h2>
+                <div class="center-probability">
+                    <p id="win-probability"></p>
+                    <p id="tie-probability"></p>
+                </div>
+            </div>
+            <div class="probabilities">
+                <h3>Opponent Probabilities</h3>
+                <div id="opponent-probabilities"></div>
+            </div>
+        </div>
+    </div>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+        $(document).ready(function() {
+            $('#poker-form').on('submit', function(event) {
+                event.preventDefault();
+                const hand = $('#hand').val().split(' ');
+                const board = $('#board').val() ? $('#board').val().split(' ') : [];
+                const num_players = $('#num_players').val();
+                
+                $.ajax({
+                    url: '/calculate',
+                    method: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify({
+                        hand: hand,
+                        board: board,
+                        num_players: num_players
+                    }),
+                    success: function(data) {
+                        if (data.error) {
+                            $('#results').html('<p>' + data.error + '</p>');
+                        } else {
+                            let userProbHtml = '';
+                            for (const [handType, probability] of Object.entries(data.user_probabilities)) {
+                                userProbHtml += '<p>' + handType.replace(/_/g, ' ').replace(/\b\w/g, char => char.toUpperCase()) + ': ' + (probability * 100).toFixed(2) + '%</p>';
+                            }
+                            $('#user-probabilities').html(userProbHtml);
+                            
+                            let opponentProbHtml = '';
+                            for (const [handType, probability] of Object.entries(data.opponent_probabilities)) {
+                                opponentProbHtml += '<p>' + handType.replace(/_/g, ' ').replace(/\b\w/g, char => char.toUpperCase()) + ': ' + (probability * 100).toFixed(2) + '%</p>';
+                            }
+                            $('#opponent-probabilities').html(opponentProbHtml);
+
+                            $('#win-probability').text('Win Probability: ' + (data.win_probability * 100).toFixed(2) + '%');
+                            $('#tie-probability').text('Tie Probability: ' + (data.tie_probability * 100).toFixed(2) + '%');
+                        }
+                    },
+                    error: function(xhr, status, error) {
+                        $('#results').html('<p>An error occurred: ' + xhr.responseText + '</p>');
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+</html>
